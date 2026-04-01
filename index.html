@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>БЭК Заказы (Supabase)</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+body {background:#111;color:#fff;font-family:sans-serif;text-align:center;}
+input, textarea, select {margin:5px;padding:8px;width:250px;}
+button {padding:10px;margin:5px;background:gold;border:none;cursor:pointer;}
+.box {border:1px solid gold;margin:10px;padding:10px;}
+</style>
+</head>
+<body>
+
+<h1>БЭК Заказы</h1>
+
+<div id="main">
+<select id="type">
+<option value="Сайт">Сайт</option>
+<option value="Игра">Игра</option>
+</select><br>
+
+<input id="name" placeholder="Ваше имя"><br>
+<input id="contact" placeholder="Номер или Telegram"><br>
+<textarea id="desc" placeholder="Описание"></textarea><br>
+<input id="price" placeholder="Сколько готовы оплатить"><br>
+
+<button onclick="sendOrder()">Отправить заказ</button>
+<br><br>
+<button onclick="adminLogin()">Вход в админку</button>
+</div>
+
+<div id="admin" style="display:none">
+<h2>Админ панель</h2>
+<div id="orders"></div>
+</div>
+
+<script>
+const supabase = window.supabase.createClient(
+  "https://qwluggstxdyfgridillt.supabase.co",
+  "sb_publishable_JkVaRq6NBtPx-tn3QthZAA_AjqrGswx"
+);
+
+async function sendOrder(){
+  const order = {
+    type: document.getElementById('type').value,
+    name: document.getElementById('name').value,
+    contact: document.getElementById('contact').value,
+    desc: document.getElementById('desc').value,
+    price: document.getElementById('price').value,
+    status: 'Ожидает'
+  };
+
+  const { error } = await supabase.from('orders').insert([order]);
+
+  if(error){
+    alert('Ошибка');
+  } else {
+    alert('Заказ отправлен');
+  }
+}
+
+async function adminLogin(){
+  const code = prompt('Введите код');
+  if(code === '111'){
+    document.getElementById('main').style.display='none';
+    document.getElementById('admin').style.display='block';
+    loadOrders();
+  } else {
+    alert('Неверный код');
+  }
+}
+
+async function loadOrders(){
+  const { data } = await supabase.from('orders').select('*');
+
+  const div = document.getElementById('orders');
+  div.innerHTML='';
+
+  data.forEach((o)=>{
+    div.innerHTML += `
+    <div class="box">
+      <b>${o.type}</b><br>
+      Имя: ${o.name}<br>
+      Контакт: ${o.contact}<br>
+      Описание: ${o.desc}<br>
+      Цена: ${o.price}<br>
+      Статус: ${o.status}<br>
+      <button onclick="updateStatus(${o.id}, 'Принят')">Принять</button>
+      <button onclick="updateStatus(${o.id}, 'Отказ')">Отказать</button>
+      <button onclick="updateStatus(${o.id}, 'Завершено')">Завершено</button>
+    </div>`;
+  });
+}
+
+async function updateStatus(id, status){
+  await supabase.from('orders').update({status}).eq('id', id);
+  loadOrders();
+}
+</script>
+
+</body>
+</html>
