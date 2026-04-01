@@ -37,12 +37,14 @@ button {padding:10px;margin:5px;background:gold;border:none;cursor:pointer;}
 </div>
 
 <script>
+// 🔑 Подключение к твоей Supabase базе
 const supabase = window.supabase.createClient(
   "https://qwluggstxdyfgridillt.supabase.co",
-  "sb_publishable_JkVaRq6NBtPx-tn3QthZAA_AjqrGswx"
+  "ВАШ_ANON_PUBLIC_KEY_СЮДА"
 );
 
-async function sendOrder(){
+// Отправка заказа
+async function sendOrder() {
   const order = {
     type: document.getElementById('type').value,
     name: document.getElementById('name').value,
@@ -52,16 +54,42 @@ async function sendOrder(){
     status: 'Ожидает'
   };
 
-  const { error } = await supabase.from('orders').insert([order]);
-
-  if(error){
-    alert('Ошибка');
-  } else {
-    alert('Заказ отправлен');
-  }
+  const { data, error } = await supabase.from('orders').insert([order]);
+  if(error) alert('Ошибка: ' + error.message);
+  else alert('Заказ отправлен!');
 }
 
-async function adminLogin(){
+// Загрузка заказов в админку
+async function loadOrders() {
+  const { data, error } = await supabase.from('orders').select('*');
+  if(error) return alert('Ошибка: ' + error.message);
+
+  const div = document.getElementById('orders');
+  div.innerHTML = '';
+  data.forEach((o) => {
+    div.innerHTML += `
+      <div class="box">
+        <b>${o.type}</b><br>
+        Имя: ${o.name}<br>
+        Контакт: ${o.contact}<br>
+        Описание: ${o.desc}<br>
+        Цена: ${o.price}<br>
+        Статус: ${o.status}<br>
+        <button onclick="updateStatus(${o.id}, 'Принят')">Принять</button>
+        <button onclick="updateStatus(${o.id}, 'Отказ')">Отказать</button>
+        <button onclick="updateStatus(${o.id}, 'Завершено')">Завершено</button>
+      </div>`;
+  });
+}
+
+// Обновление статуса
+async function updateStatus(id, status) {
+  await supabase.from('orders').update({status}).eq('id', id);
+  loadOrders();
+}
+
+// Вход в админку
+function adminLogin() {
   const code = prompt('Введите код');
   if(code === '111'){
     document.getElementById('main').style.display='none';
@@ -70,33 +98,6 @@ async function adminLogin(){
   } else {
     alert('Неверный код');
   }
-}
-
-async function loadOrders(){
-  const { data } = await supabase.from('orders').select('*');
-
-  const div = document.getElementById('orders');
-  div.innerHTML='';
-
-  data.forEach((o)=>{
-    div.innerHTML += `
-    <div class="box">
-      <b>${o.type}</b><br>
-      Имя: ${o.name}<br>
-      Контакт: ${o.contact}<br>
-      Описание: ${o.desc}<br>
-      Цена: ${o.price}<br>
-      Статус: ${o.status}<br>
-      <button onclick="updateStatus(${o.id}, 'Принят')">Принять</button>
-      <button onclick="updateStatus(${o.id}, 'Отказ')">Отказать</button>
-      <button onclick="updateStatus(${o.id}, 'Завершено')">Завершено</button>
-    </div>`;
-  });
-}
-
-async function updateStatus(id, status){
-  await supabase.from('orders').update({status}).eq('id', id);
-  loadOrders();
 }
 </script>
 
